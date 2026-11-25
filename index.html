@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AccountabilityComplainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* VOICE: a calm working tool for reports, records and evidence
+   IDEA: an inspector's clipboard, notes on the left, the finished report on the right
+   PICTURE: the editor and live document themselves
+   COLOUR and TYPE: white, ink, signal green; Space Grotesk titles, Inter body
+   LAYOUT: thin header, two columns that stack below 900px */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#07130d);--ink:light-dark(#0b0b10,#e9f3ee);--mute:light-dark(#5b6168,#9fb3a9);--line:light-dark(#e3e7ea,#1d3328);--panel:light-dark(#f6faf8,#0d1f16);--acc:#00a862;--mist:light-dark(#eafaf2,#123524);--warn:light-dark(#b42318,#ff8a80)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3,h4{font-family:"Space Grotesk",Inter,sans-serif;font-weight:600;line-height:1.1;margin:0}
+header{background:var(--acc);color:#fff;padding:16px max(4vw,16px);display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;justify-content:space-between}
+header h1{font-size:clamp(24px,3vw,34px)}header p{margin:2px 0 0;opacity:.92;font-size:15px}
+main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-height:calc(100vh - 80px)}
+.col{padding:20px max(3vw,16px)}.col+.col{background:var(--panel);border-left:1px solid var(--line)}
+label{font-size:14px;font-weight:500;color:var(--mute);display:block;margin:0 0 6px}
+input[type=text],input[type=date],select,textarea{width:100%;font:16px/1.5 Inter,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea{min-height:320px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px}.row>div{flex:1 1 160px}
+button{font:500 15px Inter,sans-serif;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button:disabled{opacity:.5;cursor:default}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}
+.hint{font-size:14px;color:var(--mute);margin:6px 0 0}.hint code{background:var(--mist);padding:1px 5px;border-radius:4px}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--mute);margin:14px 0}
+.drop.on{border-color:var(--acc);background:var(--mist);color:var(--ink)}
+.set{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:14px;margin:6px 0 12px}
+.set input[type=number]{width:76px;font:16px Inter;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.set label{display:inline-flex;gap:6px;align-items:center;margin:0;color:var(--ink)}
+.imgs{display:grid;gap:10px}
+.card{display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg)}
+.thumb{width:72px;height:72px;border-radius:6px;background:var(--mist);display:grid;place-items:center;overflow:hidden;position:relative;font:600 13px Inter;color:var(--acc)}
+.thumb img{width:100%;height:100%;object-fit:cover}.thumb b{position:absolute;bottom:3px;right:3px;background:rgb(0 0 0/.65);color:#fff;font-size:11px;padding:1px 5px;border-radius:4px}
+.card .meta{font-size:13px;color:var(--mute)}.card .tag{font:600 13px Inter;color:var(--acc)}
+.card .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.card .acts button{min-height:36px;font-size:13px;padding:0 10px}
+.card input{padding:6px 8px}
+.msg{min-height:22px;font-size:14px;margin:6px 0}.msg.err{color:var(--warn)}
+.ph{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}.ph h2{font-size:22px}
+.doc{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:clamp(18px,3vw,40px);box-shadow:0 8px 24px rgb(0 0 0/.06)}
+.doc h1{font-size:30px;margin-bottom:4px}.doc .by{color:var(--mute);font-size:14px;margin-bottom:20px}
+.doc h3{font-size:20px;margin:22px 0 8px}.doc p{margin:0 0 12px;white-space:pre-wrap}
+.doc figure{margin:14px 0 18px}.doc figure img,.doc figure video{max-width:100%;max-height:520px;border-radius:6px;display:block;background:#000}
+.doc audio{width:100%}.doc figcaption{font-size:14px;color:var(--mute);margin-top:6px;font-style:italic}
+.doc .miss{color:var(--warn);font-size:14px}
+.empty{color:var(--mute)}
+@media(max-width:900px){main{grid-template-columns:minmax(0,1fr)}.col+.col{border-left:0;border-top:1px solid var(--line)}}
+@media(prefers-reduced-motion:no-preference){.drop{transition:all .25s}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>AccountabilityComplainer</h1><p>Write it first. Drop in photos, video and audio. They land where you point.</p></div>
+</header>
+<main>
+<section class="col" aria-label="Editor">
+
+  <div class="row">
+    <div><label for="title">Document title</label><input type="text" id="title" value="Site observation: Primary 3 classroom"></div>
+    <div><label for="author">Prepared by</label><input type="text" id="author" value=""></div>
+  </div>
+  <div class="row">
+    <div><label for="tpl">Start from a template</label>
+      <select id="tpl">
+        <option value="">Choose a template…</option>
+        <option value="req">Requirements list</option>
+        <option value="obs">General observation report</option>
+        <option value="cmp">Complaint / incident report</option>
+        <option value="maint">Facility &amp; maintenance check</option>
+      </select></div>
+    <div style="flex:0 0 auto"><button id="tplGo">Insert template</button></div>
+  </div>
+  <label for="txt" id="txtLbl">Your text</label>
+  <textarea id="txt" spellcheck="true"></textarea>
+  <p class="hint">Put your cursor where a file should go, then click <b>Insert here</b> on it, or drag or paste it straight into the text. Markers look like <code>[[img-1]]</code>, <code>[[vid-2]]</code>, <code>[[aud-3]]</code>. Anything you don't place goes into <b>Attachments</b> at the end. Start a line with <code>#&nbsp;</code> for a heading.</p>
+  <div class="tools"><button id="mic" hidden>🎙 Dictate</button><button id="clear">Clear all</button></div>
+
+  <div class="set">
+    <span>Max size:</span>
+    <label>Images <input type="number" id="max" min="0.1" step="0.1" value="2"> MB</label>
+    <label>Video <input type="number" id="maxV" min="1" step="1" value="50"> MB</label>
+    <label>Audio <input type="number" id="maxA" min="1" step="1" value="15"> MB</label>
+  </div>
+  <div class="set">
+    <label><input type="checkbox" id="shrink" checked> Shrink big images instead of rejecting them</label>
+    <label><input type="checkbox" id="endAttach" checked> Put unplaced files at the end</label>
+  </div>
+  <div class="drop" id="drop">
+    <p style="margin:0 0 8px">Drag photos, videos or audio here, or</p>
+    <button class="pri" id="pick">Upload files</button>
+    <input type="file" id="file" accept="image/*,video/*,audio/*" multiple hidden>
+  </div>
+  <div class="msg" id="msg" role="status"></div>
+  <div class="imgs" id="imgs"></div>
+</section>
+
+<section class="col" aria-label="Preview">
+  <div class="ph"><h2 id="pvTitle">Live document</h2>
+    <div class="tools" style="margin:0">
+      <button class="pri" id="xZip" title="Word + PDF + HTML + all media files">Full package (.zip)</button>
+      <button id="xDocx">Word</button><button id="xPdf">PDF</button><button id="xHtml">HTML</button>
+    </div>
+  </div>
+  <p class="hint" style="margin:0 0 8px">Video and audio play in <b>HTML</b>. Word and PDF show a still frame and a link to the file, so use the <b>full package</b> to keep the media files with the report.</p>
+  <div class="msg" id="xmsg" role="status"></div>
+  <article class="doc" id="doc"></article>
+</section>
+</main>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const RE=/\[\[(img|vid|aud)-(\d+)\]\]/g;
+const LBL={img:'Figure',vid:'Video',aud:'Audio'},FN={img:'Image',vid:'Video',aud:'Audio'};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let items=[],next=1,dl=null;
+
+const TPL={
+req:`# Purpose\nWhat this is for and who it serves.\n\n# Requirements\n1. \n2. \n3. \n\n# Constraints\nBudget, time, tools.\n\n# Acceptance\nHow we will know it is done.`,
+obs:`# Date and place\n\n# What I observed\n\n# Evidence\nPut each photo or clip right after the sentence it proves.\n\n# Concerns\n\n# Recommended action and owner\n`,
+cmp:`# Complaint summary\n\n# Date, time and location\n\n# People involved\n\n# What happened\nWrite it in order. Add photos, video or audio after the line they relate to.\n\n# Impact\n\n# Resolution requested\n\n# Follow-up date\n`,
+maint:`# Area checked\n\n# Issues found\n1. \n2. \n\n# Urgency (high / medium / low)\n\n# Responsible person and deadline\n`
+};
+
+/* ---------- helpers ---------- */
+const msg=(el,s,err)=>{el.textContent=s;el.classList.toggle('err',!!err)};
+const fmt=b=>b>1048576?(b/1048576).toFixed(1)+' MB':Math.round(b/1024)+' KB';
+const fmtDur=s=>isFinite(s)&&s>0?Math.floor(s/60)+':'+String(Math.round(s%60)).padStart(2,'0'):'';
+const bytesOf=u=>Math.round((u.length-u.indexOf(',')-1)*3/4);
+const loadImg=src=>new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=src});
+const readURL=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)});
+function draw(img,scale,type,q){const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.naturalWidth*scale));c.height=Math.max(1,Math.round(img.naturalHeight*scale));const x=c.getContext('2d');if(type==='image/jpeg'){x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height)}x.drawImage(img,0,0,c.width,c.height);return c.toDataURL(type,q)}
+function placeholder(){const c=document.createElement('canvas');c.width=640;c.height=360;const x=c.getContext('2d');x.fillStyle='#10223a';x.fillRect(0,0,640,360);x.fillStyle='#00a862';x.beginPath();x.arc(320,170,54,0,7);x.fill();x.fillStyle='#fff';x.beginPath();x.moveTo(302,140);x.lineTo(302,200);x.lineTo(350,170);x.fill();x.font='600 22px sans-serif';x.textAlign='center';x.fillText('Video',320,270);return c.toDataURL('image/jpeg',.85)}
+const kindOf=f=>{const t=f.type||'',n=(f.name||'').toLowerCase();if(t.startsWith('image/'))return'img';if(t.startsWith('video/')||/\.(mp4|mov|m4v|webm|mkv|3gp|avi)$/.test(n))return'vid';if(t.startsWith('audio/')||/\.(mp3|m4a|wav|ogg|oga|aac|opus|amr|flac)$/.test(n))return'aud';return null};
+const extOf=f=>((f.name||'').match(/\.([a-z0-9]{2,5})$/i)||[])[1]?.toLowerCase()||(f.type.split('/')[1]||'bin').replace('quicktime','mov').replace('mpeg','mp3');
+
+function probe(url,video){return new Promise(ok=>{
+  const m=document.createElement(video?'video':'audio');m.preload='auto';m.muted=true;let done=false;
+  const fin=r=>{if(done)return;done=true;clearTimeout(t);m.removeAttribute('src');m.load?.();ok(r)};
+  const t=setTimeout(()=>fin({dur:isFinite(m.duration)?m.duration:0,w:m.videoWidth||0,h:m.videoHeight||0}),7000);
+  m.onerror=()=>fin({dur:0,w:0,h:0,bad:true});
+  m.onloadedmetadata=()=>{if(!video)return fin({dur:isFinite(m.duration)?m.duration:0});if(!m.videoWidth)return fin({dur:m.duration||0,w:0,h:0,bad:true});m.currentTime=Math.min(1,(isFinite(m.duration)?m.duration:3)/3)};
+  if(video)m.onseeked=()=>{try{const s=Math.min(1,960/m.videoWidth),c=document.createElement('canvas');c.width=Math.round(m.videoWidth*s);c.height=Math.round(m.videoHeight*s);c.getContext('2d').drawImage(m,0,0,c.width,c.height);fin({dur:m.duration,w:m.videoWidth,h:m.videoHeight,poster:c.toDataURL('image/jpeg',.82),pw:c.width,ph:c.height})}catch(e){fin({dur:m.duration,w:m.videoWidth,h:m.videoHeight})}};
+  m.src=url;})}
+
+/* ---------- drafts (this browser only) ---------- */
+const save=()=>{try{localStorage.setItem('ac-draft',JSON.stringify({t:$('#title').value,a:$('#author').value,x:$('#txt').value}))}catch(e){}};
+try{const d=JSON.parse(localStorage.getItem('ac-draft')||'null');if(d){$('#title').value=d.t||'';$('#author').value=d.a||'';$('#txt').value=d.x||''}}catch(e){}
+if(!$('#txt').value)$('#txt').value=`# What I observed\nThe reading corner shelf is loose on the left side and leans when touched.\n\nPupils queue at the single sink after break, and the queue reaches the door.\n\n# Recommended action\nFix the shelf this week. Add a second handwashing point before next term.`;
+
+/* ---------- file intake ---------- */
+async function addFile(f){
+  const k=kindOf(f);if(!k)return {err:`${f.name} is not a photo, video or audio file`};
+  if(k==='img'){
+    const max=Math.max(0.1,parseFloat($('#max').value)||2)*1048576;
+    let url=await readURL(f),img=await loadImg(url),note='';
+    if(!/^image\/(png|jpeg)$/.test(f.type)){url=draw(img,1,'image/png');img=await loadImg(url)}
+    if(bytesOf(url)>max){
+      if(!$('#shrink').checked)return {err:`${f.name} is ${fmt(bytesOf(url))}, over your ${fmt(max)} image limit`};
+      let s=Math.min(1,2000/Math.max(img.naturalWidth,img.naturalHeight)),q=.86,out=draw(img,s,'image/jpeg',q),n=0;
+      while(bytesOf(out)>max&&n<14){if(q>.5)q-=.12;else s*=.8;out=draw(img,s,'image/jpeg',q);n++}
+      if(bytesOf(out)>max)return {err:`${f.name} could not be shrunk under ${fmt(max)}`};
+      note=`shrunk from ${fmt(bytesOf(url))}`;url=out;img=await loadImg(url);
+    }
+    return {it:{kind:k,name:f.name||'pasted image',url,w:img.naturalWidth,h:img.naturalHeight,bytes:bytesOf(url),ext:url.startsWith('data:image/png')?'png':'jpeg',note}};
+  }
+  const lim=Math.max(1,parseFloat($(k==='vid'?'#maxV':'#maxA').value)||(k==='vid'?50:15))*1048576;
+  if(f.size>lim)return {err:`${f.name} is ${fmt(f.size)}, over your ${fmt(lim)} ${k==='vid'?'video':'audio'} limit. Trim or compress it on your phone first, or raise the limit`};
+  const url=URL.createObjectURL(f),p=await probe(url,k==='vid');
+  const it={kind:k,name:f.name||(k==='vid'?'video':'audio'),blob:f,url,bytes:f.size,ext:extOf(f),dur:p.dur||0,note:p.bad?'this browser cannot preview it; the file is still attached':''};
+  if(k==='vid'){it.poster=p.poster||placeholder();it.pw=p.pw||640;it.ph=p.ph||360;it.w=p.w;it.h=p.h}
+  return {it};
+}
+async function addFiles(files,atCursor){
+  const errs=[],added=[];msg($('#msg'),`Adding ${files.length} file${files.length>1?'s':''}…`);
+  for(const f of files){try{const r=await addFile(f);if(r.err)errs.push(r.err);else{r.it.id=next++;r.it.cap=(r.it.name||'').replace(/\.[^.]+$/,'');items.push(r.it);added.push(r.it)}}catch(e){errs.push(`${f.name||'file'} could not be read`)}}
+  if(atCursor)added.forEach(insertMarker);
+  msg($('#msg'),errs.length?errs.join('. ')+'.':added.length?`${added.length} file${added.length>1?'s':''} added${atCursor?' at the cursor':''}.`:'',errs.length>0);
+  renderCards();render();
+}
+const box=()=>$('#txt');
+const mk=it=>`[[${it.kind}-${it.id}]]`;
+function insertMarker(it){
+  const t=box(),s=t.selectionStart??t.value.length,e=t.selectionEnd??s,m=`\n${mk(it)}\n`;
+  t.value=t.value.slice(0,s)+m+t.value.slice(e);t.selectionStart=t.selectionEnd=s+m.length;t.focus();save();render();renderCards();
+}
+
+/* ---------- cards ---------- */
+function renderCards(){
+  const used=new Set([...box().value.matchAll(RE)].map(m=>+m[2]));
+  $('#imgs').innerHTML=items.map(it=>`<div class="card" data-id="${it.id}">
+  <div class="thumb">${it.kind==='img'?`<img src="${it.url}" alt="">`:it.kind==='vid'?`<img src="${it.poster}" alt=""><b>${fmtDur(it.dur)||'video'}</b>`:`<span>♪ Audio</span><b>${fmtDur(it.dur)}</b>`}</div>
+  <div><div><span class="tag">${mk(it)}</span> <span class="meta">${used.has(it.id)?'placed in text':'goes to Attachments'} · ${fmt(it.bytes)}${it.w?` · ${it.w}×${it.h}`:''}${it.note?' · '+esc(it.note):''}</span></div>
+  <input type="text" aria-label="Caption" value="${esc(it.cap)}" data-cap placeholder="Caption">
+  <div class="acts"><button data-ins>Insert here</button><button data-up aria-label="Move up">↑</button><button data-dn aria-label="Move down">↓</button><button data-del>Remove</button></div></div></div>`).join('')||'<p class="empty">No files yet.</p>';
+}
+$('#imgs').addEventListener('click',e=>{
+  const card=e.target.closest('.card');if(!card)return;const id=+card.dataset.id,i=items.findIndex(x=>x.id===id),it=items[i];
+  if(e.target.matches('[data-ins]'))return insertMarker(it);
+  if(e.target.matches('[data-del]')){if(it.blob)URL.revokeObjectURL(it.url);items.splice(i,1);const r=new RegExp(`\\n?\\[\\[(img|vid|aud)-${id}\\]\\]\\n?`,'g');$('#txt').value=$('#txt').value.replace(r,'\n');save()}
+  else if(e.target.matches('[data-up]')&&i>0)[items[i-1],items[i]]=[items[i],items[i-1]];
+  else if(e.target.matches('[data-dn]')&&i<items.length-1)[items[i+1],items[i]]=[items[i],items[i+1]];
+  else return;
+  renderCards();render();
+});
+$('#imgs').addEventListener('input',e=>{if(e.target.matches('[data-cap]')){items.find(x=>x.id===+e.target.closest('.card').dataset.id).cap=e.target.value;render()}});
+
+/* ---------- document model ---------- */
+function blocks(){
+  const used=new Set(),out=[];
+  box().value.split(/\n\s*\n/).forEach(par=>{
+    let buf=[];
+    const flush=()=>{const p=buf.join('\n');buf=[];if(!p.trim())return;let last=0;
+      p.replace(RE,(m,k,id,off)=>{const s=p.slice(last,off).trim();if(s)out.push({t:'p',text:s});
+        const it=items.find(x=>x.id===+id);if(!it)out.push({t:'miss',k,id});else if(!used.has(it.id)){used.add(it.id);out.push({t:'m',it})}
+        last=off+m.length;return m});
+      const s=p.slice(last).trim();if(s)out.push({t:'p',text:s})};
+    par.split('\n').forEach(l=>{if(/^#\s+/.test(l)){flush();out.push({t:'h',text:l.replace(/^#\s+/,'').trim()})}else buf.push(l)});flush();
+  });
+  const rest=items.filter(i=>!used.has(i.id));
+  if(rest.length&&$('#endAttach').checked){out.push({t:'h',text:'Attachments'});rest.forEach(it=>out.push({t:'m',it}))}
+  const n={img:0,vid:0,aud:0};
+  out.forEach(b=>{if(b.t==='m'){b.n=++n[b.it.kind];b.file=`media/${FN[b.it.kind]}-${b.n}.${b.it.ext}`}});
+  return out;
+}
+const capOf=b=>`${LBL[b.it.kind]} ${b.n}${b.it.dur?` (${fmtDur(b.it.dur)})`:''}${b.it.cap?': '+b.it.cap:''}`;
+const byLine=()=>[$('#author').value.trim(),new Date().toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'})].filter(Boolean).join(' · ');
+const docTitle=()=>$('#title').value||'Untitled document';
+function docHTML(bs,src){ // src(b) → media src for audio/video
+  return `<h1>${esc(docTitle())}</h1><div class="by">${esc(byLine())}</div>`+bs.map(b=>{
+    if(b.t==='h')return `<h3>${esc(b.text)}</h3>`;if(b.t==='p')return `<p>${esc(b.text)}</p>`;
+    if(b.t==='miss')return `<p class="miss">${esc(LBL[b.k])} ${esc(b.id)} was removed.</p>`;
+    const it=b.it,cap=`<figcaption>${esc(capOf(b))}</figcaption>`;
+    if(it.kind==='img')return `<figure><img src="${it.url}" alt="${esc(it.cap)}">${cap}</figure>`;
+    if(it.kind==='vid')return `<figure><video controls preload="metadata" playsinline poster="${it.poster}" src="${src(b)}"></video>${cap}</figure>`;
+    return `<figure><audio controls preload="metadata" src="${src(b)}"></audio>${cap}</figure>`;
+  }).join('');
+}
+function render(){const bs=blocks();$('#doc').innerHTML=bs.length?docHTML(bs,b=>b.it.url):'<p class="empty">Start typing to see your document.</p>'}
+
+/* ---------- exports ---------- */
+const fname=ext=>((docTitle().replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-'))||'document')+'.'+ext;
+async function deliver(name,data){
+  const el=$('#xmsg');
+  if(dl){try{await dl.save({filename:name,data});msg(el,`Saved ${name}.`)}catch(e){msg(el,e&&e.code==='declined'?'Save cancelled.':e&&e.code==='host_unavailable'?'This app cannot save files. Open the page in a browser or on a computer.':'This view could not save the file. Try opening the page in a browser.',e&&e.code!=='declined')}return}
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data]));a.download=name;document.body.append(a);a.click();a.remove();msg(el,`Downloading ${name}.`)}catch(e){msg(el,'Downloads are not available here.',true)}
+}
+async function makeHTML(bs,embed){
+  const srcs=new Map();if(embed)for(const b of bs)if(b.t==='m'&&b.it.blob)srcs.set(b,await readURL(b.it.blob));
+  const css='body{font:16px/1.55 Arial,sans-serif;max-width:820px;margin:40px auto;padding:0 20px;color:#111}h1{font-size:28px;margin:0}.by{color:#666;margin-bottom:20px}h3{margin:22px 0 8px}p{white-space:pre-wrap}figure{margin:14px 0}img,video{max-width:100%;max-height:540px;background:#000}audio{width:100%}figcaption{color:#555;font-style:italic;font-size:14px}.miss{color:#b42318}';
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(docTitle())}</title><style>${css}</style></head><body>${docHTML(bs,b=>embed?srcs.get(b):b.file)}</body></html>`;
+}
+function makePDF(bs){
+  const pdf=new window.jspdf.jsPDF({unit:'pt',format:'a4'}),M=48,W=595-2*M,B=842-M;let y=M;
+  const need=h=>{if(y+h>B){pdf.addPage();y=M}};
+  const text=(s,size,style,color,x0=M,w=W)=>{pdf.setFont('helvetica',style);pdf.setFontSize(size);pdf.setTextColor(color||'#111111');pdf.splitTextToSize(String(s),w).forEach(l=>{need(size*1.4);pdf.text(l,x0,y+size);y+=size*1.4})};
+  const link=(s,url)=>{pdf.setFont('helvetica','normal');pdf.setFontSize(10);pdf.setTextColor('#0563c1');need(15);pdf.textWithLink(s,M,y+10,{url});y+=16};
+  text(docTitle(),22,'bold');text(byLine(),10,'normal','#666666');y+=10;
+  bs.forEach(b=>{
+    if(b.t==='h'){y+=8;text(b.text,14,'bold')}
+    else if(b.t==='p'){text(b.text,11,'normal');y+=6}
+    else if(b.t==='miss'){text(`${LBL[b.k]} ${b.id} was removed.`,10,'italic','#b42318')}
+    else if(b.t==='m'){const it=b.it;
+      if(it.kind==='aud'){need(40);text(capOf(b),11,'bold');link(`Audio file: ${b.file} (in the package folder)`,b.file);y+=6;return}
+      const src=it.kind==='img'?it.url:it.poster,iw=it.kind==='img'?it.w:it.pw,ih=it.kind==='img'?it.h:it.ph;
+      let w=Math.min(W,iw*.75),h=w*ih/iw;if(h>460){h=460;w=h*iw/ih}
+      need(h+40);pdf.addImage(src,src.startsWith('data:image/png')?'PNG':'JPEG',M,y,w,h);y+=h+4;text(capOf(b),9,'italic','#555555');
+      if(it.kind==='vid')link(`Play video: ${b.file} (in the package folder)`,b.file);y+=8}
+  });
+  return pdf.output('blob');
+}
+async function makeDOCX(bs){
+  const zip=new JSZip(),rels=[];let body='',r=0;
+  const x=esc;
+  const run=(s,rpr='')=>String(s).split('\n').map((l,i)=>`${i?'<w:r><w:br/></w:r>':''}<w:r>${rpr?`<w:rPr>${rpr}</w:rPr>`:''}<w:t xml:space="preserve">${x(l)}</w:t></w:r>`).join('');
+  const para=(s,rpr,ppr='')=>`<w:p>${ppr?`<w:pPr>${ppr}</w:pPr>`:''}${run(s,rpr)}</w:p>`;
+  const hyper=(s,target)=>{const id='rId'+(++r);rels.push(`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${x(target)}" TargetMode="External"/>`);return `<w:p><w:hyperlink r:id="${id}"><w:r><w:rPr><w:color w:val="0563C1"/><w:u w:val="single"/><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${x(s)}</w:t></w:r></w:hyperlink></w:p>`};
+  const pic=(dataUrl,pw,ph)=>{const id='rId'+(++r),n=r,ext=dataUrl.startsWith('data:image/png')?'png':'jpeg';
+    zip.file(`word/media/image${n}.${ext}`,dataUrl.split(',')[1],{base64:true});rels.push(`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image${n}.${ext}"/>`);
+    let cx=Math.min(5486400,pw*9525),cy=Math.round(cx*ph/pw);if(cy>6400800){cy=6400800;cx=Math.round(cy*pw/ph)}
+    return `<w:p><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${n}" name="Picture ${n}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${n}" name="image${n}.${ext}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${id}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`};
+  const capP=s=>para(s,'<w:i/><w:color w:val="555555"/><w:sz w:val="18"/>','<w:spacing w:after="120"/>');
+  body+=para(docTitle(),'<w:b/><w:sz w:val="40"/>');body+=para(byLine(),'<w:color w:val="666666"/><w:sz w:val="20"/>','<w:spacing w:after="240"/>');
+  bs.forEach(b=>{
+    if(b.t==='h')body+=para(b.text,'<w:b/><w:sz w:val="28"/>','<w:spacing w:before="240" w:after="80"/>');
+    else if(b.t==='p')body+=para(b.text,'','<w:spacing w:after="160"/>');
+    else if(b.t==='miss')body+=para(`${LBL[b.k]} ${b.id} was removed.`,'<w:i/><w:color w:val="B42318"/>');
+    else if(b.t==='m'){const it=b.it;
+      if(it.kind==='img'){body+=pic(it.url,it.w,it.h)+capP(capOf(b))}
+      else if(it.kind==='vid'){body+=pic(it.poster,it.pw,it.ph)+capP(capOf(b))+hyper(`▶ Play video: ${b.file}`,b.file)}
+      else body+=para(capOf(b),'<w:b/>','<w:spacing w:before="120"/>')+hyper(`♪ Play audio: ${b.file}`,b.file);
+    }
+  });
+  zip.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+  zip.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  zip.file('word/_rels/document.xml.rels',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels.join('')}</Relationships>`);
+  zip.file('word/document.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`);
+  return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+const libsOk=()=>{if(!window.JSZip||!window.jspdf){msg($('#xmsg'),'The export tools did not load. Check your connection and reload.',true);return false}return true};
+const busy=async(btn,fn)=>{const t=btn.textContent;btn.disabled=true;btn.textContent='Preparing…';try{await fn()}catch(e){msg($('#xmsg'),'Export failed: '+(e&&e.message||'unknown error'),true)}finally{btn.disabled=false;btn.textContent=t}};
+$('#xHtml').onclick=e=>busy(e.target,async()=>{const bs=blocks(),av=bs.filter(b=>b.t==='m'&&b.it.blob).reduce((s,b)=>s+b.it.bytes,0);
+  if(av>80*1048576)msg($('#xmsg'),`This HTML holds ${fmt(av)} of media and may open slowly. The full package keeps files separate.`);
+  await deliver(fname('html'),await makeHTML(bs,true))});
+$('#xPdf').onclick=e=>{if(libsOk())busy(e.target,()=>deliver(fname('pdf'),makePDF(blocks())))};
+$('#xDocx').onclick=e=>{if(libsOk())busy(e.target,async()=>deliver(fname('docx'),await makeDOCX(blocks())))};
+$('#xZip').onclick=e=>{if(libsOk())busy(e.target,async()=>{
+  const bs=blocks(),z=new JSZip(),base=fname('x').slice(0,-2);
+  z.file(base+'.docx',await makeDOCX(bs));z.file(base+'.pdf',makePDF(bs));z.file(base+'.html',await makeHTML(bs,false));
+  bs.forEach(b=>{if(b.t!=='m')return;if(b.it.blob)z.file(b.file,b.it.blob);else z.file(b.file,b.it.url.split(',')[1],{base64:true})});
+  z.file('READ-ME.txt',`Unzip this folder before opening.\r\nOpen ${base}.html to read the report with videos and audio playing inline.\r\n${base}.docx and ${base}.pdf link to the files in the media folder; keep the folder next to them.\r\n`);
+  await deliver(base+'.zip',await z.generateAsync({type:'blob'}))})};
+
+/* ---------- events ---------- */
+$('#pick').onclick=()=>$('#file').click();
+$('#file').onchange=e=>{addFiles([...e.target.files],false);e.target.value=''};
+const dz=$('#drop');
+['dragenter','dragover'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.add('on')}));
+['dragleave','drop'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.remove('on')}));
+dz.addEventListener('drop',e=>addFiles([...e.dataTransfer.files],false));
+['#txt'].forEach(s=>{const ta=$(s);
+  ta.addEventListener('dragover',e=>{if([...e.dataTransfer.types].includes('Files'))e.preventDefault()});
+  ta.addEventListener('drop',e=>{const f=[...e.dataTransfer.files];if(!f.length)return;e.preventDefault();addFiles(f,true)});
+  ta.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].filter(kindOf);if(f.length){e.preventDefault();addFiles(f,true)}});
+  ta.addEventListener('input',()=>{save();render();renderCards()});});
+['#title','#author'].forEach(s=>$(s).addEventListener('input',()=>{save();render()}));
+$('#endAttach').onchange=render;
+$('#tplGo').onclick=()=>{const k=$('#tpl').value;if(!k)return;const t=box(),s=t.selectionStart??t.value.length,add=(t.value.trim()?'\n\n':'')+TPL[k];t.value=t.value.slice(0,s)+add+t.value.slice(s);save();render();renderCards();t.focus()};
+$('#clear').onclick=e=>{const b=e.target;if(b.dataset.sure){items.forEach(it=>it.blob&&URL.revokeObjectURL(it.url));items=[];$('#txt').value='';save();renderCards();render();b.textContent='Clear all';delete b.dataset.sure}else{b.dataset.sure=1;b.textContent='Tap again to clear';setTimeout(()=>{b.textContent='Clear all';delete b.dataset.sure},3000)}};
+
+renderCards();render();
+
+/* ---------- optional platform features ---------- */
+if(window.claude&&claude.use){
+  claude.use('downloads').then(d=>{dl=d}).catch(()=>{});
+  claude.use('dictation').then(d=>{if(!d)return;const b=$('#mic');b.hidden=false;let on=false;
+    d.onFinal(({text})=>{const ta=box(),s=ta.selectionStart??ta.value.length,add=(s&&!/\s$/.test(ta.value.slice(0,s))?' ':'')+text;ta.value=ta.value.slice(0,s)+add+ta.value.slice(s);ta.selectionStart=ta.selectionEnd=s+add.length;save();render()});
+    d.onState(({state})=>{on=state==='listening';b.textContent=on?'■ Stop dictating':'🎙 Dictate'});
+    b.onclick=()=>{if(on)d.stop().catch(()=>{});else d.start().catch(err=>{if(err&&err.code==='not_granted')b.hidden=true})};
+  }).catch(()=>{});
+}
+}
+</script>
+</body>
+</html>
