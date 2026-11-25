@@ -6,6 +6,10 @@ AccountabilityComplainer is a single-file web app for evidence-backed reports: r
 
 No sign-up, no server, no build step. Files never leave your device.
 
+### ▶ [Try the live demo](https://emdex04.github.io/accountability-complainer/)
+
+![Typing a report, dropping in a photo and watching it land in the live preview](docs/media/demo.gif)
+
 ## Features
 
 - **Place files inline or at the end.** Put the cursor where a file should go and click *Insert here*, or drag or paste the file straight into the text. Markers look like `[[img-1]]`, `[[vid-2]]`, `[[aud-3]]`. Anything you don't place goes into *Attachments*.
@@ -23,11 +27,19 @@ No sign-up, no server, no build step. Files never leave your device.
 - **Templates:** requirements list, observation report, complaint/incident report, facility check.
 - Headings with `# `, a draft that survives a reload, light and dark themes, and a layout that works on phones.
 
+## Screenshots
+
+| Editor and live preview | Media placed inline | On a phone |
+|---|---|---|
+| ![Editor with the live document beside it](docs/media/screenshot-editor.png) | ![A photo placed right after the sentence it belongs to](docs/media/screenshot-preview.png) | ![Mobile layout](docs/media/screenshot-mobile.png) |
+
 ## Run it
 
 Download `index.html` and open it in any modern browser. That's it.
 
-To host it free on **GitHub Pages**: *Settings → Pages → Deploy from branch → `main` / root*. The app will be live at `https://<your-username>.github.io/accountability-complainer/`.
+Or use it online: **https://emdex04.github.io/accountability-complainer/**
+
+To host your own copy free on **GitHub Pages**, fork the repo, then go to *Settings → Pages → Deploy from branch → `main` / root*.
 
 ## How it works
 

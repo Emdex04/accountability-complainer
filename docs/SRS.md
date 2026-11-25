@@ -1,6 +1,6 @@
 # AccountabilityComplainer — Software Requirements Specification (open-source edition)
 
-**Version:** 2.0-oss · **Date:** 25 November 2026 · **Owner:** Muokwe Matai
+**Version:** 2.0.1-oss · **Date:** 25 November 2026 · **Owner:** Muokwe Matai
 
 > This is the public, general-market edition. The private edition also has an LSU (Learning Support) mode for schools, which is not part of this repository.
 
@@ -47,7 +47,7 @@ Why: Word and PDF cannot reliably play embedded media across devices, so in thos
 | FR-20 | Optional voice dictation and saving when running inside a Claude artifact (feature-detected; hidden elsewhere) |
 
 ## 5. Non-functional requirements
-- Single static `index.html`. No backend and no build step. Hostable on GitHub Pages.
+- Single static `index.html`. No backend and no build step. Live at https://emdex04.github.io/accountability-complainer/ (GitHub Pages).
 - All processing happens on the device. Nothing is uploaded.
 - Responsive layout that stacks below 900px. Light and dark themes. 44px touch targets and visible focus.
 - External dependencies: JSZip 3.10.1 and jsPDF 2.5.1 from cdnjs.
@@ -74,3 +74,4 @@ On 25 Nov 2026, in headless Chrome (Playwright) with a PNG, an MP4 and a WAV: ad
 |---------|------|---------|
 | 1.0 | 2026-11-25 | Text editor, image placement, size limit and auto-shrink, captions, DOCX/PDF/HTML export |
 | 2.0-oss | 2026-11-25 | Video and audio, per-type limits, video stills, inline playback, media-aware exports, full package (.zip); first public release |
+| 2.0.1-oss | 2026-11-25 | Live demo on GitHub Pages; README demo GIF and screenshots (`docs/media/`); author credit set to Muokwe Matai |
