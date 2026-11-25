@@ -1,6 +1,6 @@
 # AccountabilityComplainer — Software Requirements Specification (open-source edition)
 
-**Version:** 2.0-oss · **Date:** 25 November 2026 · **Owner:** Ijeoma Muokwe
+**Version:** 2.0-oss · **Date:** 25 November 2026 · **Owner:** Muokwe Matai
 
 > This is the public, general-market edition. The private edition also has an LSU (Learning Support) mode for schools, which is not part of this repository.
 

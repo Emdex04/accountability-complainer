@@ -57,4 +57,4 @@ MIT. See [LICENSE](LICENSE).
 
 ---
 
-Built by [Ijeoma Muokwe](https://github.com/Emdex04).
+Built by [Muokwe Matai](https://github.com/Emdex04).
